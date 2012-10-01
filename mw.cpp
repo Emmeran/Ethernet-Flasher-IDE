@@ -697,12 +697,14 @@ void MW::addFile(QString file)
             return;
 
     m_Files.append(file);
+    m_Files.sort();
     QTreeWidgetItem* i = new QTreeWidgetItem(QStringList(file.section('/', -1)));
 
     i->setData(0, Qt::UserRole, "file");
     i->setData(0, Qt::UserRole + 1, file);
 
     tiFiles->addChild(i);
+    tiFiles->sortChildren(0, Qt::AscendingOrder);
 }
 
 void MW::saveProject()
@@ -790,6 +792,7 @@ void MW::openProject(QString efpFile)
     tiFiles->setData(0, Qt::UserRole, "files");
     root->addChild(tiFiles);
     tiFiles->setExpanded(true);
+    files.sort();
     foreach (QString file, files)
         addFile(file);
 
