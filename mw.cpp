@@ -238,9 +238,12 @@ QString MW::cleanPath(const QString& path)
 
 void MW::clean()
 {
-    QDir d(m_BuildDir);
     ui->cout->clear();
 
+    if (QMessageBox::question(NULL, "Clean directory?", "Really delete all files in [" + m_BuildDir + "]?", QMessageBox::Yes, QMessageBox::No) != QMessageBox::Yes)
+        return;
+
+    QDir d(m_BuildDir);
     cout("Removing files from [" + m_BuildDir + "]");
     foreach (QString file, d.entryList(QDir::Files | QDir::NoDotAndDotDot))
     {
