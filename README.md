@@ -5,6 +5,12 @@ IDE for Arduino based AVR code for uploading via avrdude or Ethernet Flasher
 
 Note: the EthernetFlasher does not work at the moment but will be added later on.
 
+Warning:
+This software is experimental. Use at your own risk!
+
+Dependencies:
+libQsciScintilla
+
 Description
 ====================
 This IDE compiles your project together with the Arduino core (please make sure to set the paths in the build settings).
