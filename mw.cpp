@@ -10,6 +10,7 @@
 
 #include "Qsci/qsciscintilla.h"
 #include "Qsci/qscistyle.h"
+#include "Qsci/qsciapis.h"
 #include <QMessageBox>
 #include <QProcess>
 #include <QCryptographicHash>
@@ -47,6 +48,11 @@ MW::MW(QString file, QWidget *parent) :
     ui->mainToolBar->addAction(QIcon("images/rebuild.png"), "Recompile", this, SLOT(recompile()));
     ui->mainToolBar->addAction(QIcon("images/chip.png"), "Upload (AVR)", this, SLOT(upload()));
     ui->mainToolBar->addAction(QIcon("images/configure.png"), "Build Settings", this, SLOT(on_actionBuild_Settings_triggered()));
+
+    QsciAPIs* a = new QsciAPIs(&lexer);
+    a->add("analogRead?(u8 pin)");
+    a->prepare();
+    lexer.setAPIs(a);
 
     lexer.setDefaultFont(QFont("Monospace"));
 
@@ -101,6 +107,8 @@ void MW::reiterateSerialPorts()
 {
     QDir d("/dev");
 
+    QString current = agPRT->checkedAction() ? agPRT->checkedAction()->text() : "";
+
     foreach (QAction* a, ui->menuSerial_Port->actions())
     if (a != ui->actionAuto)
     {
@@ -109,11 +117,15 @@ void MW::reiterateSerialPorts()
             delete a;
     }
 
-    foreach (QString port, d.entryList(QStringList() << "ttyS*" << "ttyACM*" << "ttyUSB*", QDir::NoFilter, QDir::Name))
+    foreach (QString port, d.entryList(QStringList() << "ttyACM*" << "ttyUSB*", QDir::System, QDir::Name))
     {
         QAction *a = ui->menuSerial_Port->addAction("/dev/" + port);
         a->setData("/dev/" + port);
+        a->setCheckable(true);
         agPRT->addAction(a);
+
+        if (current == "/dev/" + port)
+            a->setChecked(true);
     }
 }
 
@@ -281,7 +293,7 @@ void MW::upload(bool fromThread)
     if (port == "-P Auto")
         port = "";
 
-    QString cmd = profile->value("linker").toString() + " -U flash:w:" + target + ".hex:i " + port + " -p " + agMCU->checkedAction()->data().toString();
+    QString cmd = profile->value("uploader").toString() + " -U flash:w:" + target + ".hex:i " + port + " -p " + agMCU->checkedAction()->data().toString();
     p.start(cmd, QProcess::ReadOnly);
     p.waitForFinished(-1);
 
@@ -914,7 +926,7 @@ void MW::openFile(const QString &file)
     widget->setMarginWidth(1, QString(w + 1, '0'));
     widget->setIndentationsUseTabs(true);
     widget->setMarginLineNumbers(1, true);
-    widget->setAutoCompletionSource(QsciScintilla::AcsDocument);
+    widget->setAutoCompletionSource(QsciScintilla::AcsAll);
     widget->setAutoCompletionThreshold(2);
 
     connect(widget, SIGNAL(modificationChanged(bool)), this, SLOT(fileModified(bool)));
@@ -1229,7 +1241,6 @@ void MW::on_issues_cellActivated(int row, int)
     q->annotate(line - 1, ui->issues->item(row, 2)->data(Qt::UserRole).toString(), QsciStyle::OriginalCase);
     q->setFocus();
 }
-
 
 
 
