@@ -49,7 +49,6 @@ private:
     bool projectModified;
     QSettings *sets;
     WorkThread t;
-    QString mcu, clock;
 
     QActionGroup *agMCU, *agUPL, *agCLK, *agPRT;
 

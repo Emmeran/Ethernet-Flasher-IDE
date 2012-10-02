@@ -12,6 +12,7 @@ public:
 
     void run();
     QString job;
+    QString port, mcu, clock;
 
     void cout(const QString &s, bool statusbar = false);
     void iout(const QString &file, int line, const QString &message);

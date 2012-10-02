@@ -272,9 +272,12 @@ void MW::upload(bool fromThread)
             return;
 
         ui->cout->clear();
+        ui->cout->append("Starting upload...");
         ui->issues->clearContents();
         ui->issues->setRowCount(0);
         t.job = "upload";
+        t.port = agPRT->checkedAction()->data().toString();
+        t.mcu = agMCU->checkedAction()->data().toString();
         t.start();
         return;
     }
@@ -288,12 +291,12 @@ void MW::upload(bool fromThread)
     }
 
     QProcess p;
-    QString port = "-P " + agPRT->checkedAction()->data().toString();
+    QString port = "-P " + t.port;
 
     if (port == "-P Auto")
         port = "";
 
-    QString cmd = profile->value("uploader").toString() + " -U flash:w:" + target + ".hex:i " + port + " -p " + agMCU->checkedAction()->data().toString();
+    QString cmd = profile->value("uploader").toString() + " -U flash:w:" + target + ".hex:i " + port + " -p " + t.mcu;
     p.start(cmd, QProcess::ReadOnly);
     p.waitForFinished(-1);
 
@@ -327,9 +330,6 @@ void MW::compile(bool fromThread)
         if (QMessageBox::question(NULL, "Unsaved files", "There are unsaved files in your project. Do you want to save them before compilation?", QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes)
             saveAllFiles();
 
-    mcu = agMCU->checkedAction()->data().toString();
-    clock = agCLK->checkedAction()->data().toString();
-
     if (!fromThread)
     {
         if (t.isRunning())
@@ -347,6 +347,9 @@ void MW::compile(bool fromThread)
         ui->issues->setRowCount(0);
         clearAnnotations();
         t.job = "compile";
+        t.mcu = agMCU->checkedAction()->data().toString();
+        t.clock = agCLK->checkedAction()->data().toString();
+
         t.start();
         return;
     }
@@ -424,9 +427,9 @@ void MW::compile(bool fromThread)
         QProcess p;
         QString cmd;
         if (dt.endsWith(".c"))
-            cmd = profile->value("compilerC").toString() + " -DF_CPU="+clock+" -mmcu=" + mcu + " " + dt + " -o " + buildObject(dt) + " -I" + incDirs.join(" -I");
+            cmd = profile->value("compilerC").toString() + " -DF_CPU="+t.clock+" -mmcu=" + t.mcu + " " + dt + " -o " + buildObject(dt) + " -I" + incDirs.join(" -I");
         else
-            cmd = profile->value("compilerCPP").toString() + " -DF_CPU="+clock+" -mmcu=" + mcu + " " + dt + " -o " + buildObject(dt) + " -I" + incDirs.join(" -I");
+            cmd = profile->value("compilerCPP").toString() + " -DF_CPU="+t.clock+" -mmcu=" + t.mcu + " " + dt + " -o " + buildObject(dt) + " -I" + incDirs.join(" -I");
         t.cout(cmd);
 
         p.start(cmd, QProcess::ReadOnly);
@@ -521,7 +524,7 @@ void MW::compile(bool fromThread)
 
     else
     {
-        QString cmd = profile->value("linker").toString() + " -mmcu=" + mcu + " -o " + target + " " + objects + " " +m_BuildDir+"/core.a ";
+        QString cmd = profile->value("linker").toString() + " -mmcu=" + t.mcu + " -o " + target + " " + objects + " " +m_BuildDir+"/core.a ";
         p.start(cmd, QProcess::ReadOnly);
         p.waitForFinished(-1);
 
