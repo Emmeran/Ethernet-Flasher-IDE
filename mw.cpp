@@ -697,6 +697,8 @@ void MW::saveFile(int index)
     f.write(w->text().toUtf8());
     f.close();
 
+    w->setModified(false);
+
     ui->files->setTabText(index, w->property("file").toString().section('/', -1));
 }
 
