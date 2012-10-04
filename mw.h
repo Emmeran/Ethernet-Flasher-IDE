@@ -49,6 +49,7 @@ private:
     bool projectModified;
     QSettings *sets;
     WorkThread t;
+    QString cport;
 
     QActionGroup *agMCU, *agUPL, *agCLK, *agPRT;
 
@@ -66,7 +67,7 @@ private slots:
     void saveFile(int);
     bool showProjectSaveQuestion();
     bool showFilesSaveQuestion();
-    void appendCOUT(QString, bool);
+    void appendCOUT(QString, toutFlags);
     void saveAllFiles();
     void closeFile(int);
     void clearAnnotations();

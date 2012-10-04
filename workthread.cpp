@@ -7,9 +7,12 @@ WorkThread::WorkThread(MW *parent) :
     par = parent;
 }
 
-void WorkThread::cout(const QString &s, bool statusbar)
+void WorkThread::cout(const QString &s, toutFlags flags)
 {
-    emit textOut(s, statusbar);
+    if (s == "")
+        return;
+
+    emit textOut(s, flags);
 }
 
 void WorkThread::run()

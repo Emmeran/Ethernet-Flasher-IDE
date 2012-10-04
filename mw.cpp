@@ -64,7 +64,10 @@ MW::MW(QString file, QWidget *parent) :
     tabifyDockWidget(ui->issuesdock, ui->dockWidget_3);
     tabifyDockWidget(ui->issuesdock, ui->dockWidget_4);
 
-    connect(&t, SIGNAL(textOut(QString, bool)), this, SLOT(appendCOUT(QString, bool)));
+    toutFlags dummy;
+    qRegisterMetaType<toutFlags>("toutFlags", &dummy);
+
+    connect(&t, SIGNAL(textOut(QString, toutFlags)), this, SLOT(appendCOUT(QString, toutFlags)));
     connect(&t, SIGNAL(issueOut(QString,int,QString)), this, SLOT(addIssue(QString,int,QString)));
     connect(ui->menuSerial_Port, SIGNAL(aboutToShow()), this, SLOT(reiterateSerialPorts()));
 
@@ -95,11 +98,17 @@ MW::MW(QString file, QWidget *parent) :
     ui->action16_MHz->setData("16000000UL");
 }
 
-void MW::appendCOUT(QString msg, bool sb)
+void MW::appendCOUT(QString msg, toutFlags sb)
 {
-    ui->cout->append(msg);
+    if (sb & TO_NONL)
+        ui->cout->insertPlainText(msg);
 
-    if (sb)
+    else
+        ui->cout->append(msg);
+
+    ui->cout->moveCursor(QTextCursor::End);
+
+    if (sb & TO_STATUS)
         ui->statusBar->showMessage(msg);
 }
 
@@ -117,6 +126,8 @@ void MW::reiterateSerialPorts()
             delete a;
     }
 
+    QString first;
+    bool found = false;
     foreach (QString port, d.entryList(QStringList() << "ttyACM*" << "ttyUSB*", QDir::System, QDir::Name))
     {
         QAction *a = ui->menuSerial_Port->addAction("/dev/" + port);
@@ -124,9 +135,17 @@ void MW::reiterateSerialPorts()
         a->setCheckable(true);
         agPRT->addAction(a);
 
+        if (first == "")
+            first = "/dev/" + port;
+
         if (current == "/dev/" + port)
+        {
+            found = true;
             a->setChecked(true);
+        }
     }
+
+    cport = found ? current : first;
 }
 
 void MW::updateHome()
@@ -140,7 +159,7 @@ void MW::updateHome()
         if (tmp == "none")
             tmp = "";
 
-        tmp += "<a href=\"" + rp + "\">" + rp + "</a><br>";
+        tmp = "<a href=\"" + rp + "\">" + rp + "</a><br>" + tmp;
     }
 
     ui->rprojs->setText(tmp);
@@ -275,8 +294,9 @@ void MW::upload(bool fromThread)
         ui->cout->append("Starting upload...");
         ui->issues->clearContents();
         ui->issues->setRowCount(0);
+        reiterateSerialPorts();
+        t.port = cport;
         t.job = "upload";
-        t.port = agPRT->checkedAction()->data().toString();
         t.mcu = agMCU->checkedAction()->data().toString();
         t.start();
         return;
@@ -297,16 +317,21 @@ void MW::upload(bool fromThread)
         port = "";
 
     QString cmd = profile->value("uploader").toString() + " -U flash:w:" + target + ".hex:i " + port + " -p " + t.mcu;
-    p.start(cmd, QProcess::ReadOnly);
-    p.waitForFinished(-1);
-
     t.cout(cmd);
+    p.start(cmd, QProcess::ReadOnly);
+
+    while (p.state() != QProcess::NotRunning && !p.waitForFinished(500))
+    {
+        t.cout(QString::fromUtf8(p.readAllStandardError()), TO_NONL);
+       // t.cout(QString::fromUtf8(p.readAllStandardOutput()), TO_NONL);
+    }
+
     t.cout(QString::fromUtf8(p.readAllStandardError()));
     t.cout(QString::fromUtf8(p.readAllStandardOutput()));
     t.cout("Exit code: " + QString::number(p.exitCode()));
 
     if (!p.exitCode())
-        t.cout("Upload successful", true);
+        t.cout("Upload successful", TO_STATUS);
 }
 
 void MW::recompile()
@@ -570,7 +595,7 @@ void MW::compile(bool fromThread)
     t.cout("Exit code: " + QString::number(p.exitCode()));
 
     if (p.exitCode() == 0)
-        t.cout("Build completed. " + QString::number(QFileInfo(target + ".bin").size()) + " bytes", true);
+        t.cout("Build completed. " + QString::number(QFileInfo(target + ".bin").size()) + " bytes", TO_STATUS);
 }
 
 void MW::menuTrigger(QAction *a)
