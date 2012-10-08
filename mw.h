@@ -33,7 +33,7 @@ private:
     QString m_BuildDir;
 
     QString buildObject(const QString& sourceObject);
-    QDateTime newestDependency(const QString& file, const QStringList &incDirs, int level = 0);
+    QDateTime newestDependency(const QString& file, const QStringList &incDirs, QStringList &checkedFiles, int level = 0);
     QString cleanPath(const QString& path);
     void addDirRecursive(QString dir, QStringList& libFiles, QStringList& m_IncDirs);
     void addLib(QString libDir);

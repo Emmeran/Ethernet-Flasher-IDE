@@ -204,10 +204,15 @@ void MW::addIssue(QString file, int line, QString message)
 
 }
 
-QDateTime MW::newestDependency(const QString& file, const QStringList& incDirs, int level)
+QDateTime MW::newestDependency(const QString& file, const QStringList& incDirs, QStringList &checkedFiles, int level)
 {
+    if (checkedFiles.contains(file))
+        return QDateTime();
+
     if (level == 10)
         return QDateTime();
+
+    checkedFiles.append(file);
 
     QDateTime mod = QFileInfo(file).lastModified();
 
@@ -223,11 +228,11 @@ QDateTime MW::newestDependency(const QString& file, const QStringList& incDirs, 
 
     int pos = -1;
 
-    QRegExp r1("(\"[^\n]*\"|/\\*.*\\*/)");
+    QRegExp r1("(\"[^\n]*(\\*\\/|\\/\\*)[^\n]*\"|/\\*.*\\*/)");
     r1.setMinimal(true);
     data.replace(r1, "");
 
-    QRegExp r2("#include [<\"]([^>]*.h)[>\"].*\\n");
+    QRegExp r2("#include [<\"]([^>\"]*.h)[>\"].*\\n");
     QStringList incDirsCopy = incDirs;
     incDirsCopy << QFileInfo(file).canonicalPath();
     QStringList includes;
@@ -245,7 +250,7 @@ QDateTime MW::newestDependency(const QString& file, const QStringList& incDirs, 
             if (!QFile::exists(dir + "/" + inc))
                 continue;
 
-            QDateTime mod2 = newestDependency(inc, incDirs, level + 1);
+            QDateTime mod2 = newestDependency(inc, incDirs, checkedFiles, level + 1);
             if (mod2 > mod)
                 mod = mod2;
 
@@ -439,8 +444,12 @@ void MW::compile(bool fromThread)
             continue;
         }
 
-        if (obj > newestDependency(f, incDirs))
+        QStringList cf;
+        if (obj > newestDependency(f, incDirs, cf))
+        {
+            t.cout(f + " is up to date.");
             continue;
+        }
 
         dirtyTargets.append(f);
     }
