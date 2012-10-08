@@ -6,4 +6,5 @@ objCopy=/usr/bin/avr-objcopy
 linker="/usr/bin/avr-gcc -Os -Wl,--gc-sections -lm"
 pathCore=/usr/share/arduino/hardware/arduino/cores/arduino
 pathIncludes=/usr/lib/avr/include
-uploader=/usr/bin/avrdude -b 115200
+uploader="/usr/bin/avrdude -b 115200 -carduino -C/usr/share/arduino/hardware/tools/avrdude.conf -D "
+
