@@ -604,7 +604,15 @@ void MW::compile(bool fromThread)
     t.cout("Exit code: " + QString::number(p.exitCode()));
 
     if (p.exitCode() == 0)
+    {
         t.cout("Build completed. " + QString::number(QFileInfo(target + ".bin").size()) + " bytes", TO_STATUS);
+        t.cout("");
+
+        p.start("avr-size " + target, QProcess::ReadOnly);
+        p.waitForFinished(-1);
+
+        t.cout(p.readAllStandardOutput());
+    }
 }
 
 void MW::menuTrigger(QAction *a)
